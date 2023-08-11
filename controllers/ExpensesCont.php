@@ -1,10 +1,10 @@
 <?php
 include('db.php');
 
-class User extends DbConnection
+class Expenses extends DbConnection
 {
-    private $table = 'users';
-    private $QueryName = 'User';
+    private $table = 'expenses';
+    private $QueryName = 'Expense';
 
     private function checkUser($email)
     {
@@ -37,10 +37,19 @@ class User extends DbConnection
 
     function getQueryByUserId($id = null)
     {
-        $userID = $id || $_GET['userId'];
-        $query = "SELECT * FROM " . $this->table . " WHERE id = " . $userID;
-        $result = mysqli_query($this->DB, $query);
+
         $response = [];
+        $response['status'] = 0;
+
+        if (!isset($_GET['userId'])) {
+            $response['status_message'] = "userId is required";
+            $this->ApiResponse($response);
+        }
+
+        $userID = isset($id) ? $id : $_GET['userId'];
+        $query = "SELECT * FROM " . $this->table . " WHERE userid = " . $userID;
+        $result = mysqli_query($this->DB, $query);
+
         if (!$result) {
             $response['status'] = 0;
             $response['status_message'] = $this->QueryName . " List not get.";
@@ -48,10 +57,46 @@ class User extends DbConnection
             $response['query'] = $query;
             $this->ApiResponse($response);
         }
+
         $data = array();
         while ($row = mysqli_fetch_assoc($result)) {
             $data[] = $row;
         }
+
+        $response['status'] = 1;
+        $response['status_message'] = $this->QueryName . " list get Successfully.";
+        $response['data'] = $data;
+        $this->ApiResponse($response);
+    }
+
+    function getQueryByCategoryId($id = null)
+    {
+
+        $response = [];
+        $response['status'] = 0;
+
+        if (!isset($_GET['categoryId'])) {
+            $response['status_message'] = "categoryId is required";
+            $this->ApiResponse($response);
+        }
+
+        $categoryId = isset($id) ? $id : $_GET['categoryId'];
+        $query = "SELECT * FROM " . $this->table . " WHERE category = " . $categoryId;
+        $result = mysqli_query($this->DB, $query);
+
+        if (!$result) {
+            $response['status'] = 0;
+            $response['status_message'] = $this->QueryName . " List not get.";
+            $response['error'] = mysqli_error($this->DB);
+            $response['query'] = $query;
+            $this->ApiResponse($response);
+        }
+
+        $data = array();
+        while ($row = mysqli_fetch_assoc($result)) {
+            $data[] = $row;
+        }
+
         $response['status'] = 1;
         $response['status_message'] = $this->QueryName . " list get Successfully.";
         $response['data'] = $data;
@@ -61,43 +106,41 @@ class User extends DbConnection
     function InsertQuery()
     {
         $input = json_decode(file_get_contents('php://input'), true);
-        print_r($_REQUEST);
         $response = [];
         $response['status'] = 0;
 
-
-        if (!isset($input["email"])) {
-            $response['status_message'] = "email is required";
+        if (!isset($input["category"])) {
+            $response['status_message'] = "category is required";
             $this->ApiResponse($response);
         }
-        if (!isset($input["password"])) {
-            $response['status_message'] = "password is required";
+        if (!isset($input["details"])) {
+            $response['status_message'] = "details is required";
             $this->ApiResponse($response);
         }
-        if (!isset($input["fullname"])) {
-            $response['status_message'] = "fullname is required";
+        if (!isset($input["pay"])) {
+            $response['status_message'] = "pay is required";
+            $this->ApiResponse($response);
+        }
+        if (!isset($input["userid"])) {
+            $response['status_message'] = "userid is required";
             $this->ApiResponse($response);
         }
 
-        $email = $input["email"];
-        $password = $input["password"];
-        $fullname = $input["fullname"];
+        $category = $input["category"];
+        $details = $input["details"];
+        $pay = $input["pay"];
+        $userid = $input["userid"];
 
-        $isExist = $this->checkUser($email);
-        if ($isExist) {
-            $response['status_message'] = "Already exist";
+        $query = "INSERT INTO " . $this->table . "(category,details, pay,userid) VALUES('" . $category . "','" . $details . "','" . $pay . "','" . $userid . "')";
+        if (mysqli_query($this->DB, $query)) {
+            $response['status'] = 1;
+            $response['status_message'] = $this->QueryName . " created Successfully.";
+            $input['id'] = mysqli_insert_id($this->DB);
+            $response['data'] = $input;
         } else {
-            $query = "INSERT INTO " . $this->table . "(email,password, fullname) VALUES('" . $email . "','" . $password . "','" . $fullname . "')";
-            if (mysqli_query($this->DB, $query)) {
-                $response['status'] = 1;
-                $response['status_message'] = $this->QueryName . " created Successfully.";
-                $input['id'] = mysqli_insert_id($this->DB);
-                $response['data'] = $input;
-            } else {
-                $response['status'] = 0;
-                $response['status_message'] = $this->QueryName . " creation failed.";
-                $response['error'] = mysqli_error($this->DB);
-            }
+            $response['status'] = 0;
+            $response['status_message'] = $this->QueryName . " creation failed.";
+            $response['error'] = mysqli_error($this->DB);
         }
         $this->ApiResponse($response);
     }
@@ -112,15 +155,31 @@ class User extends DbConnection
             $response['status_message'] = "id is required";
             $this->ApiResponse($response);
         }
-        if (!isset($input["fullname"])) {
-            $response['status_message'] = "fullname is required";
+        if (!isset($input["category"])) {
+            $response['status_message'] = "category is required";
+            $this->ApiResponse($response);
+        }
+        if (!isset($input["details"])) {
+            $response['status_message'] = "details is required";
+            $this->ApiResponse($response);
+        }
+        if (!isset($input["pay"])) {
+            $response['status_message'] = "pay is required";
+            $this->ApiResponse($response);
+        }
+        if (!isset($input["userid"])) {
+            $response['status_message'] = "userid is required";
             $this->ApiResponse($response);
         }
 
-        $fullname = $input["fullname"];
+        $category = $input["category"];
+        $details = $input["details"];
+        $pay = $input["pay"];
+        $userid = $input["userid"];
         $id = $input["id"];
 
-        $query = "UPDATE " . $this->table . " SET `fullname`='" . $fullname . "' WHERE `id`='" . $id . "'";
+        $query = "UPDATE " . $this->table . " SET `category`='" . $category . "', `details`='" . $details . "', `pay`='" . $pay . "', `userid`='" . $userid . "' WHERE `id`='" . $id . "'";
+
         if (mysqli_query($this->DB, $query)) {
             $response['status'] = 1;
             $response['status_message'] = $this->QueryName . " updated Successfully.";
