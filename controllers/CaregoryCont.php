@@ -8,7 +8,7 @@ class Category extends DbConnection
 
     private function checkCategoryByNameD($name, $createdBy)
     {
-        $query = "SELECT * FROM " . $this->table . " WHERE createdBy = " . $createdBy . " AND name = '" . $name . "'";
+        $query = "SELECT * FROM " . $this->table . " WHERE deleted=0 AND createdBy = " . $createdBy . " AND name = '" . $name . "'";
         $result = mysqli_query($this->DB, $query);
         if ($result->num_rows === 0) {
             return false;
@@ -18,7 +18,7 @@ class Category extends DbConnection
 
     function getAllQuery()
     {
-        $result = mysqli_query($this->DB, 'SELECT * FROM ' . $this->table);
+        $result = mysqli_query($this->DB, 'SELECT * FROM ' . $this->table . 'WHERE deleted=0');
         $response = [];
         if (!$result) {
             $response['status'] = 0;
@@ -38,7 +38,7 @@ class Category extends DbConnection
     function getQueryByUserId($id = null)
     {
         $userID = $id || $_GET['userId'];
-        $query = "SELECT * FROM " . $this->table . " WHERE createdBy = " . $userID;
+        $query = "SELECT * FROM " . $this->table . " WHERE deleted=0 AND createdBy = " . $userID;
         $result = mysqli_query($this->DB, $query);
         $response = [];
         if (!$result) {
@@ -114,7 +114,7 @@ class Category extends DbConnection
         $name = $input["name"];
         $id = $input["id"];
 
-        $query = "UPDATE ". $this->table ." SET `name`='" . $name . "' WHERE `id`='" . $id . "'";
+        $query = "UPDATE " . $this->table . " SET `name`='" . $name . "' WHERE `id`='" . $id . "'";
         if (mysqli_query($this->DB, $query)) {
             $response['status'] = 1;
             $response['status_message'] = $this->QueryName . " updated Successfully.";
@@ -140,11 +140,11 @@ class Category extends DbConnection
         }
 
         $response = [];
-        $query = "DELETE FROM ". $this->table ." WHERE `id`='" . $id . "'";
+        $query = "UPDATE " . $this->table . " SET `deleted`=1 WHERE `id`='" . $id . "'";
         if (mysqli_query($this->DB, $query)) {
             $response['status'] = 1;
             $response['status_message'] = $this->QueryName . " deleted Successfully.";
-            $response['data'] =$_GET;
+            $response['data'] = $_GET;
         } else {
             $response['status'] = 0;
             $response['status_message'] = $this->QueryName . " delete failed.";
