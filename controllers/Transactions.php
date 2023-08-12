@@ -1,10 +1,10 @@
 <?php
 include('db.php');
 
-class Expenses extends DbConnection
+class Transaction extends DbConnection
 {
-    private $table = 'expenses';
-    private $QueryName = 'Expense';
+    private $table = 'transactions';
+    private $QueryName = 'Transaction';
 
     private function checkUser($email)
     {
@@ -68,9 +68,9 @@ class Expenses extends DbConnection
         $startIndex = ($page - 1) * $perPage;
 
         // Build the basic SELECT query
-        $queryCount = 'SELECT COUNT(*) AS total_records FROM ' . $this->table . 'WHERE deleted=0';
-        $querySelect = 'SELECT expenses.*, category.name AS categoryName FROM ' . $this->table . '
-        LEFT JOIN category ON expenses.category = category.id';
+        $queryCount = 'SELECT COUNT(*) AS total_records FROM ' . $this->table;
+        $querySelect = 'SELECT ' . $this->table . '.*, category.name AS categoryName FROM ' . $this->table . '
+        LEFT JOIN category ON ' . $this->table . '.category = category.id';
 
         // Build main SELECT query with pagination and sorting
         $queryWhere = '';
@@ -79,7 +79,7 @@ class Expenses extends DbConnection
             foreach ($conditions as $column => $value) {
                 $whereConditions[] = "$column = '" . mysqli_real_escape_string($this->DB, $value) . "'";
             }
-            $queryWhere .= ' WHERE ' . implode(' AND ', $whereConditions); // Where Condition Here
+            $queryWhere .= ' WHERE ' . $this->table . '.deleted=0 AND ' . implode(' AND ', $whereConditions); // Where Condition Here
 
             $columns = ["category", "details", "pay"];
             $searchQuery = mysqli_real_escape_string($this->DB, $searchQuery);
@@ -93,7 +93,7 @@ class Expenses extends DbConnection
             foreach ($conditions as $column => $value) {
                 $whereConditions[] = "$column = '" . mysqli_real_escape_string($this->DB, $value) . "'";
             }
-            $queryWhere .= ' WHERE ' . implode(' AND ', $whereConditions); // Where Condition Here
+            $queryWhere .= ' WHERE' . $this->table . '.deleted=0 AND ' . implode(' AND ', $whereConditions); // Where Condition Here
         } else if ($searchQuery) {
             $columns = ["category", "details", "pay"];
             $searchQuery = mysqli_real_escape_string($this->DB, $searchQuery);
@@ -101,7 +101,7 @@ class Expenses extends DbConnection
             foreach ($columns as $column) {
                 $searchConditions[] = "LOWER(`$column`) LIKE '%" . mysqli_real_escape_string($this->DB, strtolower($searchQuery)) . "%'";
             }
-            $queryWhere .= ' WHERE (' . implode(' OR ', $searchConditions) . ')'; // Search Condition Here
+            $queryWhere .= ' WHERE ' . $this->table . '.deleted=0 AND (' . implode(' OR ', $searchConditions) . ')'; // Search Condition Here
         }
 
         // Execute query to get total records count
@@ -235,13 +235,18 @@ class Expenses extends DbConnection
             $response['status_message'] = "userid is required";
             $this->ApiResponse($response);
         }
+        if (!isset($input["type"])) {
+            $response['status_message'] = "type is required";
+            $this->ApiResponse($response);
+        }
 
         $category = $input["category"];
         $details = $input["details"];
         $pay = $input["pay"];
         $userid = $input["userid"];
+        $type = $input["type"];
 
-        $query = "INSERT INTO " . $this->table . "(category,details, pay,userid) VALUES('" . $category . "','" . $details . "','" . $pay . "','" . $userid . "')";
+        $query = "INSERT INTO " . $this->table . " (type,category,details, pay,userid) VALUES('" . $type . "','" . $category . "','" . $details . "','" . $pay . "','" . $userid . "')";
         if (mysqli_query($this->DB, $query)) {
             $response['status'] = 1;
             $response['status_message'] = $this->QueryName . " created Successfully.";

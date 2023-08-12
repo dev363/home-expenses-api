@@ -35,10 +35,25 @@ class Category extends DbConnection
         $this->ApiResponse($response);
     }
 
-    function getQueryByUserId($id = null)
+    function getQueryByTypeId($userId = null, $typeId = null)
     {
-        $userID = $id || $_GET['userId'];
-        $query = "SELECT * FROM " . $this->table . " WHERE deleted=0 AND createdBy = " . $userID;
+        $userID = $userId;
+        $type = $typeId;
+
+        if (!isset($_GET["userId"])) {
+            $response['status_message'] = "userId is required";
+            $this->ApiResponse($response);
+        } else {
+            $userID = $_GET['userId'];
+        }
+        if (!isset($_GET["type"])) {
+            $response['status_message'] = "type is required";
+            $this->ApiResponse($response);
+        } else {
+            $type = $_GET['type'];
+        }
+
+        $query = "SELECT * FROM " . $this->table . " WHERE deleted=0 AND createdBy = " . $userID . " AND type=" . $type;
         $result = mysqli_query($this->DB, $query);
         $response = [];
         if (!$result) {
@@ -72,15 +87,20 @@ class Category extends DbConnection
             $response['status_message'] = "createdBy is required";
             $this->ApiResponse($response);
         }
+        if (!isset($input["type"])) {
+            $response['status_message'] = "type is required";
+            $this->ApiResponse($response);
+        }
 
         $name = $input["name"];
         $createdBy = $input["createdBy"];
+        $type = $input["type"];
 
         $isExist = $this->checkCategoryByNameD($name,  $createdBy);
         if ($isExist) {
             $response['status_message'] = "Already exist";
         } else {
-            $query = "INSERT INTO " . $this->table . "(name, createdBy) VALUES('" . $name . "','" . $createdBy . "')";
+            $query = "INSERT INTO " . $this->table . "(name, createdBy,type) VALUES('" . $name . "','" . $createdBy . "','" . $type . "')";
             if (mysqli_query($this->DB, $query)) {
                 $response['status'] = 1;
                 $response['status_message'] = $this->QueryName . " created Successfully.";
