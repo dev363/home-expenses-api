@@ -10,8 +10,6 @@ $api = new Category();
 
 $ApiCall = $_GET["api"];
 $requestMethod = $_SERVER["REQUEST_METHOD"];
-echo $raw_data = file_get_contents('php://input');
-echo "---------------------------";
 
 switch ($requestMethod) {
     case 'GET': {

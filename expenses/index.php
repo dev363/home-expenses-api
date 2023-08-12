@@ -38,6 +38,9 @@ switch ($requestMethod) {
                 case 'UpdateQuery':
                     $api->UpdateQuery();
                     break;
+                case 'getDataWithFilters':
+                    $api->getDataWithFilters();
+                    break;
                 default:
                     $api->getAllQuery();
                     break;

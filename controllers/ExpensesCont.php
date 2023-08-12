@@ -18,7 +18,7 @@ class Expenses extends DbConnection
 
     function getAllQuery()
     {
-        $result = mysqli_query($this->DB, 'SELECT * FROM ' . $this->table);
+        $result = mysqli_query($this->DB, 'SELECT * FROM ' . $this->table . ' WHERE deleted=0');
         $response = [];
         if (!$result) {
             $response['status'] = 0;
@@ -35,6 +35,116 @@ class Expenses extends DbConnection
         $this->ApiResponse($response);
     }
 
+    function getDataWithFilters()
+    {
+        $page = 1;
+        $perPage = 10;
+        $sortColumn = null;
+        $sortOrder = 'ASC';
+        $conditions = [];
+        $searchQuery = null;
+        $input = json_decode(file_get_contents('php://input'), true);
+
+        if (isset($input['page'])) {
+            $page = $input['page'];
+        }
+        if (isset($input['perPage'])) {
+            $perPage = $input['perPage'];
+        }
+        if (isset($input['sortColumn'])) {
+            $sortColumn = $input['sortColumn'];
+        }
+        if (isset($input['sortOrder'])) {
+            $sortOrder = $input['sortOrder'];
+        }
+        if (isset($input['conditions'])) {
+            $conditions = $input['conditions'];
+        }
+        if (isset($input['searchQuery'])) {
+            $searchQuery = $input['searchQuery'];
+        }
+
+        // Calculate the starting index for pagination
+        $startIndex = ($page - 1) * $perPage;
+
+        // Build the basic SELECT query
+        $queryCount = 'SELECT COUNT(*) AS total_records FROM ' . $this->table . 'WHERE deleted=0';
+        $querySelect = 'SELECT expenses.*, category.name AS categoryName FROM ' . $this->table . '
+        LEFT JOIN category ON expenses.category = category.id';
+
+        // Build main SELECT query with pagination and sorting
+        $queryWhere = '';
+        if (!empty($conditions) && $searchQuery) {
+            $whereConditions = [];
+            foreach ($conditions as $column => $value) {
+                $whereConditions[] = "$column = '" . mysqli_real_escape_string($this->DB, $value) . "'";
+            }
+            $queryWhere .= ' WHERE ' . implode(' AND ', $whereConditions); // Where Condition Here
+
+            $columns = ["category", "details", "pay"];
+            $searchQuery = mysqli_real_escape_string($this->DB, $searchQuery);
+            $searchConditions = [];
+            foreach ($columns as $column) {
+                $searchConditions[] = "LOWER(`$column`) LIKE '%" . mysqli_real_escape_string($this->DB, strtolower($searchQuery)) . "%'";
+            }
+            $queryWhere .= ' AND (' . implode(' OR ', $searchConditions) . ')'; // Search Condition Here
+        } else if (!empty($conditions)) {
+            $whereConditions = [];
+            foreach ($conditions as $column => $value) {
+                $whereConditions[] = "$column = '" . mysqli_real_escape_string($this->DB, $value) . "'";
+            }
+            $queryWhere .= ' WHERE ' . implode(' AND ', $whereConditions); // Where Condition Here
+        } else if ($searchQuery) {
+            $columns = ["category", "details", "pay"];
+            $searchQuery = mysqli_real_escape_string($this->DB, $searchQuery);
+            $searchConditions = [];
+            foreach ($columns as $column) {
+                $searchConditions[] = "LOWER(`$column`) LIKE '%" . mysqli_real_escape_string($this->DB, strtolower($searchQuery)) . "%'";
+            }
+            $queryWhere .= ' WHERE (' . implode(' OR ', $searchConditions) . ')'; // Search Condition Here
+        }
+
+        // Execute query to get total records count
+        $queryCount = $queryCount . $queryWhere;
+        $result = mysqli_query($this->DB, $queryCount);
+        $totalRecords = 0;
+        if ($result) {
+            $row = mysqli_fetch_assoc($result);
+            $totalRecords = $row['total_records'];
+        }
+
+
+        $querySelect = $querySelect . $queryWhere;
+        if ($sortColumn) {
+            $querySelect .= ' ORDER BY ' . $sortColumn . ' ' . $sortOrder;
+        }
+
+        $querySelect .= ' LIMIT ' . $startIndex . ', ' . $perPage;
+
+        $result = mysqli_query($this->DB, $querySelect);
+        $response = [];
+
+        if (!$result) {
+            $response['status'] = 0;
+            $response['status_message'] = $this->QueryName . " List not get.";
+            $response['error'] = mysqli_error($this->DB);
+        } else {
+            $data = array();
+            while ($row = mysqli_fetch_assoc($result)) {
+                $data[] = $row;
+            }
+            $response['status'] = 1;
+            $response['status_message'] = $this->QueryName . " list get Successfully.";
+            $response['data'] = $data;
+            $response['total_records'] = $totalRecords;
+            $response['total_pages'] = ceil($totalRecords / $perPage);
+            $response['current_page'] = $page;
+        }
+
+        $this->ApiResponse($response);
+    }
+
+
     function getQueryByUserId($id = null)
     {
 
@@ -47,7 +157,7 @@ class Expenses extends DbConnection
         }
 
         $userID = isset($id) ? $id : $_GET['userId'];
-        $query = "SELECT * FROM " . $this->table . " WHERE userid = " . $userID;
+        $query = "SELECT * FROM " . $this->table . " WHERE deleted=0 AND userid = " . $userID;
         $result = mysqli_query($this->DB, $query);
 
         if (!$result) {
@@ -81,7 +191,7 @@ class Expenses extends DbConnection
         }
 
         $categoryId = isset($id) ? $id : $_GET['categoryId'];
-        $query = "SELECT * FROM " . $this->table . " WHERE category = " . $categoryId;
+        $query = "SELECT * FROM " . $this->table . " WHERE deleted=0 AND category = " . $categoryId;
         $result = mysqli_query($this->DB, $query);
 
         if (!$result) {
@@ -205,7 +315,7 @@ class Expenses extends DbConnection
         }
 
         $response = [];
-        $query = "DELETE FROM " . $this->table . " WHERE `id`='" . $id . "'";
+        $query =  "UPDATE " . $this->table . " SET `deleted`=1 WHERE `id`='" . $id . "'";
         if (mysqli_query($this->DB, $query)) {
             $response['status'] = 1;
             $response['status_message'] = $this->QueryName . " deleted Successfully.";
