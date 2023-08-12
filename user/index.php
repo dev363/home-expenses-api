@@ -5,13 +5,11 @@ header("Access-Control-Allow-Methods: OPTIONS,GET,POST,PUT,DELETE");
 header("Access-Control-Max-Age: 3600");
 header("Access-Control-Allow-Headers: Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With");
 
-include('../controllers/UserCont.php');
+include('../controllers/User.php');
 $api = new User();
 
 $ApiCall = $_GET["api"];
 $requestMethod = $_SERVER["REQUEST_METHOD"];
-echo $raw_data = file_get_contents('php://input');
-echo "---------------------------";
 
 switch ($requestMethod) {
     case 'GET': {
