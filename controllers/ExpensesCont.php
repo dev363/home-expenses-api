@@ -18,7 +18,7 @@ class Expenses extends DbConnection
 
     function getAllQuery()
     {
-        $result = mysqli_query($this->DB, 'SELECT * FROM ' . $this->table);
+        $result = mysqli_query($this->DB, 'SELECT * FROM ' . $this->table . ' WHERE deleted=0');
         $response = [];
         if (!$result) {
             $response['status'] = 0;
@@ -68,7 +68,7 @@ class Expenses extends DbConnection
         $startIndex = ($page - 1) * $perPage;
 
         // Build the basic SELECT query
-        $queryCount = 'SELECT COUNT(*) AS total_records FROM ' . $this->table;
+        $queryCount = 'SELECT COUNT(*) AS total_records FROM ' . $this->table . 'WHERE deleted=0';
         $querySelect = 'SELECT expenses.*, category.name AS categoryName FROM ' . $this->table . '
         LEFT JOIN category ON expenses.category = category.id';
 
@@ -157,7 +157,7 @@ class Expenses extends DbConnection
         }
 
         $userID = isset($id) ? $id : $_GET['userId'];
-        $query = "SELECT * FROM " . $this->table . " WHERE userid = " . $userID;
+        $query = "SELECT * FROM " . $this->table . " WHERE deleted=0 AND userid = " . $userID;
         $result = mysqli_query($this->DB, $query);
 
         if (!$result) {
@@ -191,7 +191,7 @@ class Expenses extends DbConnection
         }
 
         $categoryId = isset($id) ? $id : $_GET['categoryId'];
-        $query = "SELECT * FROM " . $this->table . " WHERE category = " . $categoryId;
+        $query = "SELECT * FROM " . $this->table . " WHERE deleted=0 AND category = " . $categoryId;
         $result = mysqli_query($this->DB, $query);
 
         if (!$result) {
@@ -315,7 +315,7 @@ class Expenses extends DbConnection
         }
 
         $response = [];
-        $query = "DELETE FROM " . $this->table . " WHERE `id`='" . $id . "'";
+        $query =  "UPDATE " . $this->table . " SET `deleted`=1 WHERE `id`='" . $id . "'";
         if (mysqli_query($this->DB, $query)) {
             $response['status'] = 1;
             $response['status_message'] = $this->QueryName . " deleted Successfully.";
