@@ -14,8 +14,8 @@ $requestMethod = $_SERVER["REQUEST_METHOD"];
 switch ($requestMethod) {
     case 'GET': {
             switch ($ApiCall) {
-                case 'getQueryByUserId':
-                    $api->getQueryByUserId();
+                case 'getQueryByTypeId':
+                    $api->getQueryByTypeId();
                     break;
                 case 'DeleteQuery':
                     $api->DeleteQuery();
